@@ -1,20 +1,15 @@
 import requests
 from bs4 import BeautifulSoup
 
+HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; research-bot/1.0)"}
 
-response = requests.get('https://allgamblinglist.com/')
-soup = BeautifulSoup(response.text, 'html.parser')
-# casino_links = soup.findAll("li", {"rel":"nofollow"})
-# links = soup.select(".attachment-post-thumbnail")
-# links[0].attrs
-# links[10].get('href', 0)
-casino_links = []
-for a in soup.find_all('a', { 'rel': 'nofollow'}):
-    casino_links.append(a.get('href'))
+response = requests.get("https://allgamblinglist.com/", headers=HEADERS, timeout=15)
+response.raise_for_status()
+soup = BeautifulSoup(response.text, "html.parser")
 
-with open('casino_list.txt', 'w') as f:
-    for link in casino_links:
-        f.write("%s\n" % link)
-    # f.write(casino_links)
+casino_links = [a.get("href") for a in soup.find_all("a", {"rel": "nofollow"}) if a.get("href")]
 
+with open("casino_list.txt", "w") as f:
+    f.writelines(f"{link}\n" for link in casino_links)
 
+print(f"Saved {len(casino_links)} links to casino_list.txt")
