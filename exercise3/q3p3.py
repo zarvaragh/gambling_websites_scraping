@@ -1,55 +1,27 @@
-import pandas as pd
-import requests
-from bs4 import BeautifulSoup
-from urllib.request import urlopen, Request
-import urllib
-import re
-import datetime 
-import json
 import sys
- 
-    
-gambling_words = ['bonus','play',
-                 'casino', 'gambling',
-                 'spin','spins', 'gamble',
-                 'gambles','card', 'cards', 'win',
-                 'money', 'slot machines',
-                 'slot machine',  'luck', 'spinning', 'bet', 'betting']
+import json
+from urllib.request import urlopen, Request
+from bs4 import BeautifulSoup
 
+GAMBLING_WORDS = {
+    "bonus", "play", "casino", "gambling", "spin", "spins", "gamble",
+    "gambles", "card", "cards", "win", "money", "slot", "luck", "spinning",
+    "bet", "betting",
+}
+HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
 
-headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2228.0 Safari/537.3'}    
-        
-#inserting the links manually 
-# links = ['https://www.freecodecamp.org/news/http-error-403-forbidden-what-it-means-and-how-to-fix-it/',
-#           'https://www.bet365.com/#/HO/']
-
-#inserting the links as an external arg
-links = [sys.argv[1]]
+links = sys.argv[1:]
 
 dic = {}
-def distinguish_websites ():
-    for link in range(len(links)):   
-        try:
-            req = Request(url=links[link], headers=headers) 
-            html = str(urlopen(req).read())
-        except:
-            print('not a valid page at link:', link)
-        finally:
-            soup = BeautifulSoup(html)
-            data = soup.findAll(text=True)
-        
-        website_words = [] 
-        for l in range(len(data)):
-            website_words.append(data[l].strip().split())
-    
-        for i in range(len(website_words)):
-            for j in range(len(website_words[i])):
-                if ((website_words[i][j]).lower() in gambling_words):
-                    dic.update({links[link]: 'Gambling site'})
-                    return True
-                else:
-                    dic.update({links[link]: 'non-Gambling site'})
-                    
-distinguish_websites()
-print(dic)
-                      
+for link in links:
+    try:
+        req = Request(url=link, headers=HEADERS)
+        html = urlopen(req, timeout=10).read()
+        soup = BeautifulSoup(html, "html.parser")
+        words = {w.lower() for w in soup.get_text().split()}
+        is_gambling = bool(words & GAMBLING_WORDS)
+        dic[link] = "Gambling site" if is_gambling else "Non-gambling site"
+    except Exception as e:
+        dic[link] = f"Error: {e}"
+
+print(json.dumps(dic, indent=2))
